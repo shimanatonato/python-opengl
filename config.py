@@ -3,6 +3,7 @@ import numpy as np
 
 # デフォルト値
 VIDEO_SOURCE_DEFAULT="source/video_default.mp4"  # 動画ファイルのパス
+TARGET_SOURCE_DEFAULT="source/target_default.csv"  # ターゲットファイルのパス（各行の構成：x座標, y座標, 半径r）
 MODE_DEFAULT=0  # 動作モード（0:デフォルトの動画を読み込み, 1:カメラを起動, 2:マウス操作）
 WIDTH_DEFAULT=600  # 画像サイズ
 HEIGHT_DEFAULT=400
@@ -36,3 +37,11 @@ OPTFLOW_SCALE=4  # オプティカルフロー計算時の画質調整（1で元
 OPTFLOW_EXP=8  # 動きの大きさの指数
 OPTFLOW_MOVEMIN=3  # 動きの大きさの最低値
 OPTFLOW_PIXMIN=1000/OPTFLOW_SCALE  # 条件を満たす画素数の最低値
+
+# ゲームモードでのターゲット設定
+TARGET_CLEAR_WAIT_TIME=2  # ターゲット到達後の待ち時間
+TARGET_RADIUS_MIN=0.1
+TARGET_RADIUS_MAX=0.2
+TARGET_COLOR=(0,0,255)
+TARGET_COLOR_CLEARED=(0,255,255)
+TARGET_ALPHA=0.5

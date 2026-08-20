@@ -1,6 +1,7 @@
 import numpy as np
-import cv2,time,os,sys,multiprocessing
+import cv2,time,os,sys,multiprocessing,csv
 import draw3D_GL,cat_controller,config,vision,geometry,load_file
+from gaming import TargetCircle
 
 # exe化のための絶対パス取得関数
 def resource_path(relative_path):
@@ -22,19 +23,32 @@ class MouseEvent:
 def main():
     # モードの選択
     mode=config.MODE_DEFAULT
+    mode_list_str=["0","1","2"]
     while True:
-        print("モードを入力してください（0:デフォルトの動画を読み込み, 1:カメラを起動, 2:マウス操作）")
+        print("モードを入力してください（0:デフォルトの動画を読み込み（デモ）, 1:カメラを起動, 2:マウス操作）")
         mode_str=input()
-        if mode_str in ["0","1","2"]:
+        if mode_str in mode_list_str:
             mode=int(mode_str)
             break
         else:
             print("0, 1, 2以外を入力しないでください")
     video_source=-1
+    is_target_read=False
+    target_ind=-1
+    target_list=None
     if mode==0:
         video_source=resource_path(config.VIDEO_SOURCE_DEFAULT)
+        try:
+            with open(config.TARGET_SOURCE_DEFAULT, "r") as f:
+                reader=csv.reader(f)
+                target_list=[[int(v) for v in row]for row in reader]
+            target_ind=0
+            is_target_read=True
+        except FileNotFoundError:
+            print("デフォルトのターゲット情報ファイルが見つかりません。ランダムにターゲットを生成します。")
     elif mode==1:
         video_source=config.CAMERA_NUMBER
+    
     capture=None
     mouse_event=None
     mode_video=False  # 動画・カメラ映像
@@ -66,7 +80,7 @@ def main():
         mode_mouse=True
 
     # カメラパラメータ計算
-    R=geometry.create_rotmtx_from_arg(*config.CAMERA_HPR)  # カメラ回転行列
+    R=geometry.create_rotmtx_from_angle_rad(*config.CAMERA_HPR)  # カメラ回転行列
     t=-R@config.CAMERA_POSITION  # カメラ平行移動
     Rt_mtx=np.concatenate((R,t.reshape((3,1))),axis=1)  # カメラ外部パラメータ
     focal_px=config.FOCAL/config.PIXEL_WIDTH  # 画素サイズ[px]
@@ -82,16 +96,23 @@ def main():
     eye_px_before=[0,0]  # 前のフレームの目の注目画素
     time_sum=0  # フレーム当たりの秒数の合計（fpsの計算に使用）
     frame_sum=0  # 経過フレーム数
+    is_game_mode=True  # ゲームモードか
+    is_target_exsit=False  # ターゲットが生成されているか
+    target_circle=None  # ターゲットのクラス
+    is_target_clear=False  # ターゲットに到達後か
+    target_clear_wait_time=config.TARGET_CLEAR_WAIT_TIME  # ターゲット到達後の待ち時間
+    target_clear_rest=target_clear_wait_time  # ターゲット到達後の残り待ち時間
 
     # インスタンス化
     zbuffer_renderer=draw3D_GL.ZBufferRenderer()
     controller=cat_controller.CatController()
+    target_circle=TargetCircle()
     
     print("ESCキーで終了します")
     
     # メインループ
     while True:
-        tgtx,tgty=0,0  # 今フレームの注目画素
+        kp_x,kp_y=0,0  # 今フレームの注目画素
         is_new_frame = False  # 画像を読み込んだか
         if mode_video:
             if capture is not None and not capture.isread.is_set():
@@ -143,41 +164,66 @@ def main():
                     
                     if np.isnan(optx) or np.isnan(opty):
                         # NaNの場合
-                        tgtx, tgty = target_px_before
+                        kp_x, kp_y = target_px_before
                     else:
                         previmg_gray = nextimg_gray
-                        tgtx, tgty = optx, opty
+                        kp_x, kp_y = optx, opty
                 else:
-                    tgtx, tgty = target_px_before
+                    kp_x, kp_y = target_px_before
             elif mode_mouse:
                 # マウス座標を注目画素に代入
-                tgtx,tgty=mouse_event.x,mouse_event.y
+                kp_x,kp_y=mouse_event.x,mouse_event.y
                 previmg_gray=nextimg
         else:
             continue
 
         drawimg = nextimg.copy()  # 描画画像
 
+        # ターゲットの生成
+        if is_game_mode and not is_target_exsit:
+            is_target_exsit=True
+            if is_target_read:
+                x,y,r=target_list[target_ind]
+                target_ind=(target_ind+1)%len(target_list)
+                target_circle.spawn(drawimg.shape,x,y,r)
+            else:
+                target_circle.spawn(drawimg.shape)
+
         # 注目画素の計算
         # 設定速度に応じて徐々に追いかける
-        headx=head_px_before[0]+(tgtx-head_px_before[0])*time_diff*config.HEAD_SPEED  # 頭の注目画素
-        heady=head_px_before[1]+(tgty-head_px_before[1])*time_diff*config.HEAD_SPEED
-        eyex=eye_px_before[0]+(tgtx-eye_px_before[0])*time_diff*config.EYE_SPEED  # 目の注目画素（左右同じ）
-        eyey=eye_px_before[1]+(tgty-eye_px_before[1])*time_diff*config.EYE_SPEED
+        headx=head_px_before[0]+(kp_x-head_px_before[0])*time_diff*config.HEAD_SPEED  # 頭の注目画素
+        heady=head_px_before[1]+(kp_y-head_px_before[1])*time_diff*config.HEAD_SPEED
+        eyex=eye_px_before[0]+(kp_x-eye_px_before[0])*time_diff*config.EYE_SPEED  # 目の注目画素（左右同じ）
+        eyey=eye_px_before[1]+(kp_y-eye_px_before[1])*time_diff*config.EYE_SPEED
         
-        rot_mtx_list=controller.calcRotate(headx,heady,eyex,eyey)
+        model_mtx_list=controller.calcPose(headx,heady,eyex,eyey)
+        tgtx,tgty=eyex,eyey
+
+        # ターゲット到達判定
+        if is_game_mode and target_circle is not None and not is_target_clear and target_circle.is_inside_of_circle(tgtx,tgty):
+            is_target_clear=True
+            target_circle.is_cleared=True
+            target_clear_rest=target_clear_wait_time
+
         # 描画
-        drawimg=zbuffer_renderer.draw_scene(drawimg,rot_mtx_list)
+        drawimg=zbuffer_renderer.draw_scene(drawimg,model_mtx_list)
+        if is_game_mode and target_circle is not None and is_target_exsit:
+            drawimg=target_circle.draw(drawimg)
         cv2.circle(drawimg,[int(tgtx),int(tgty)],10,(0,0,255),-1)  # 注目画素（移動の大きい画素）の表示
         cv2.imshow(wname, drawimg)  # 画像表示
 
-        # 今フレームの情報の記録
+        # 今フレームの情報の記録・更新
         time_now=time.time()  # 今フレームの時刻
         time_diff=time_now-time_before  # 前のフレームからかかった時間
         time_before=time_now  # 今フレームの時刻
-        target_px_before=[tgtx,tgty]  # 今フレームの注目画素
+        target_px_before=[kp_x,kp_y]  # 今フレームの注目画素
         head_px_before=[headx,heady]  # 今フレームの頭の注目画素
         eye_px_before=[eyex,eyey]  # 今フレームの目の注目画素
+        if is_game_mode and is_target_clear:
+            target_clear_rest-=time_diff
+            if target_clear_rest<=0:
+                is_target_clear=False
+                is_target_exsit=False
         time_sum+=time_diff
         frame_sum+=1
         if frame_sum!=0:

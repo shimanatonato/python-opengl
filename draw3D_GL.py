@@ -202,8 +202,8 @@ class ZBufferRenderer():
             for i,obj in enumerate(self.objects):
                 model=models[i]
                 glUniformMatrix4fv(self.model_loc, 1, GL_TRUE, model)
-                glEnableVertexAttribArray(2)
                 glBindVertexArray(obj["vao"])
+                glEnableVertexAttribArray(2)
                 glDrawElements(GL_TRIANGLES, obj["count"], GL_UNSIGNED_INT, None)
 
             glfw.swap_buffers(self.window)  # 描画内容をウィンドウに反映

@@ -2,7 +2,7 @@
 import numpy as np
 
 # 回転角から回転行列を生成
-def create_rotmtx_from_arg(y,p,r):
+def create_rotmtx_from_angle_rad(y,p,r):
     yaw=np.array([  # ヨー
         [np.cos(y),0,np.sin(y)],
         [0,1,0],
