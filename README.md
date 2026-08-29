@@ -6,7 +6,7 @@
 制作当初はCPUによるフルスクラッチでのCG描画を行っていましたが、さらなる技術の向上のために、GPU描画への移植、動画ファイル読み込みへの対応、並列処理への変更などの改良を加えました。
 
 サンプル動画
-<video src=video_sample.mp4 controls width="600"></video>
+<video src=media/video_sample.mp4 controls width="600"></video>
 
 ### 制作目的
 研究室の行事として開催された、画像プログラミングの技術習得のためのイベントがきっかけで作成しました。\
@@ -32,7 +32,7 @@ main.pyを実行し、コマンドラインにモード（半角数字）を入�
 
 ### オプティカルフロー
 前後の連続したフレームから、動きの流れを推定する技術です。
-<img src=images/vector.png width="600">
+<img src=media/vector.png width="600">
 
 OpenCVのcalcOpticalFlowFarneback関数により計算しています。\
 計算したオプティカルフローの動きの大きさから、猫が注視する点を決定しています。
@@ -50,8 +50,9 @@ cat
 │  load_file.py         # 3Dモデル（.obj）の読み込み
 │  README.md            # 本ファイル
 │
-├─images                # 説明用画像
+├─media                # 説明用画像・動画
 │      vector.png
+│      video_sample.mp4
 │
 ├─source                # 3Dモデルやデフォルト動画
 │      cat_head.obj     # 頭
