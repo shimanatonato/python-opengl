@@ -38,8 +38,9 @@ def main():
     target_list=None
     if mode==0:
         video_source=resource_path(config.VIDEO_SOURCE_DEFAULT)
+        target_source=resource_path(config.TARGET_SOURCE_DEFAULT)
         try:
-            with open(config.TARGET_SOURCE_DEFAULT, "r") as f:
+            with open(target_source, "r") as f:
                 reader=csv.reader(f)
                 target_list=[[int(v) for v in row]for row in reader]
             target_ind=0
