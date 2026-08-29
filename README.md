@@ -8,7 +8,8 @@
 制作当初はCPUによるフルスクラッチでのCG描画を行っていましたが、さらなる技術の向上のために、GPU描画への移植、動画ファイル読み込みへの対応、並列処理への変更などの改良を加えました。
 
 サンプル動画
-<video src="https://github.com/user-attachments/assets/740c8bc0-eb3e-45c3-be08-ede347a77e” controls width="600"></video>
+
+<video src="https://github.com/user-attachments/assets/740c8bc0-eb3e-45c3-be08-ede347a77e" controls width="600"></video>
 
 ### 制作目的
 研究室の行事として開催された、画像プログラミングの技術習得のためのイベントがきっかけで作成しました。\
