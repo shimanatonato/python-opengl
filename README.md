@@ -9,7 +9,7 @@
 
 サンプル動画
 
-<video src="https://github.com/user-attachments/assets/740c8bc0-eb3e-45c3-be08-ede347a77e" controls width="600"></video>
+https://github.com/user-attachments/assets/57208544-11e3-4155-8ff6-75bb91ec9c86
 
 ### 制作目的
 研究室の行事として開催された、画像プログラミングの技術習得のためのイベントがきっかけで作成しました。\
